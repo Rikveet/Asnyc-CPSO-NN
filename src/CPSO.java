@@ -1,20 +1,27 @@
+import java.util.Arrays;
+
 public class CPSO {
 
     public static double[][][] NeuralNetwork;
+    public static double[][] NN;
     public double[][] data;
-    public static double maxW = 1;
-    public static double minW = -1;
-    public static double inertia = 0.729844;
-    public static double context1 = 1.49618;
-    public static double context2 = 1.49618;
-    public static double maxVelocity = 0.7;
-    public static int iterations = 50;
+    public static double maxW = 0.5;
+    public static double minW = -0.5;
+    public static double inertia = 0.7;
+    public static double context1 = 0.8;
+    public static double context2 = 0.8;
+    public static double maxVelocity = 0.2;
+    public static int iterations = 2000;
     public static double bestError = Double.MAX_VALUE;
-    public static int particles = 5;
+    public static int particles = 20;
     public static volatile boolean updateCopyFlipFlop = false;
 
     public double[][][] createNeuralNetwork(int[] config){
         double[][][] NeuralNetwork = new double[config.length-1][][];
+        NN = new double[config.length][];
+        for (int i = 0; i < NN.length; i++) {
+            NN[i] = new double[config[i]];
+        }
         for(int i=0; i < NeuralNetwork.length; i++){
             NeuralNetwork[i]= new double[config[i]][];
             for (int j=0;j<config[i];j++){
@@ -43,6 +50,32 @@ public class CPSO {
         return swarms;
     }
 
+    public double activate(double input){
+        double pve = Math.exp(input);
+        double nve = Math.exp(-input);
+        return (pve - nve)/(pve + nve);
+    }
+
+    public void feedForward(double[] input) {
+        System.out.println(Arrays.toString(input));
+        for (double[] doubles : NN) {
+            Arrays.fill(doubles, 0);
+        }
+        System.arraycopy(input, 0, NN[0], 0, input.length - 1);
+        for(int l =0; l < NN.length-1; l++){
+            for(int _n = 0; _n < NN[l].length; _n++){
+                NN[l][_n] = activate(NN[l][_n]);
+                for (int n =0; n < NN[l+1].length; n++){
+                    NN[l+1][n] += NN[l][_n] * NeuralNetwork[l][_n][n];
+                }
+            }
+        }
+        for(int n = 0; n < NN[NN.length-1].length; n++){
+            NN[NN.length-1][n] = activate(NN[NN.length-1][n]);
+        }
+        System.out.println(Arrays.toString(NN[NN.length-1]));
+    }
+
     public void iris(){
         int []config = {4,4,3};
         Iris iris = new Iris();
@@ -54,7 +87,19 @@ public class CPSO {
         for (Swarm s: swarms){
             s.start();
         }
+        for (Swarm s: swarms){
+            try{
+                s.join();
+            }
+            catch (Exception e){
+                System.out.println(Colors.TEXT_RED + e.getMessage());
+            }
+
+        }
         System.out.println("Activated all swarms");
+        for (double[] input: data) {
+            feedForward(input);
+        }
     }
 
     public static synchronized void updateWeight(int i, int j,int _j, double w,double bError){

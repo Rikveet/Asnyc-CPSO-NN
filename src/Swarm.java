@@ -1,4 +1,7 @@
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class Swarm extends Thread{
     private int i,j,particles;
@@ -70,7 +73,7 @@ public class Swarm extends Thread{
             for(int _n = 0; _n < NeuralNetwork[l].length; _n++){
                 NeuralNetwork[l][_n] = activate(NeuralNetwork[l][_n]);
                for (int n =0; n < NeuralNetwork[l+1].length; n++){
-                   NeuralNetwork[l][n] += NeuralNetwork[l][_n] * NN[l][_n][n];
+                   NeuralNetwork[l+1][n] += NeuralNetwork[l][_n] * NN[l][_n][n];
                }
             }
         }
@@ -80,23 +83,24 @@ public class Swarm extends Thread{
     }
 
     public void run(){
+        List<double[]> lData = new ArrayList<>(Arrays.asList(data));
         for (int _i = 0 ; _i < iterations; _i++){
-            System.out.println(i+" "+j+" iteration: "+_i);
             for (int p =0; p < Weights.length; p++){
                 for ( int w= 0; w <Weights[p].length; w++){
                     NN = CPSO.getNetwork();
                     NN[i][j][w] = Weights[p][w];
                     double mse = 0;
-                    for (double[] input: data){
+                    Collections.shuffle(lData);
+                    for (double[] input: lData){
                         feedForward(input);
                         double[] output = NeuralNetwork[NeuralNetwork.length-1];
                         double expected = input[input.length-1]-1;
                         double error = 0;
                         for (int e = 0; e<output.length; e++){
                             if (e == expected){
-                                error +=  ((1-output[e]) * (1-output[e]));
+                                error +=  ((2-output[e]) * (2-output[e]));
                             }else{
-                                error +=  ((0-output[e]) * (0-output[e]));
+                                error +=  ((output[e]+1) * (output[e]+1));
                             }
                         }
                         error = error/output.length;
@@ -123,7 +127,6 @@ public class Swarm extends Thread{
                 }
             }
         }
-        System.out.println("Thread for node " + i + " , "+ j + " complete");
     }
 
 }
