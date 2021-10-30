@@ -3,25 +3,29 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
 
-public class Iris {
+public class CNAE9 {
     double[][] LoadData(){
         try{
-            File irisData = new File("src/Data/iris.data");
-            Scanner reader = new Scanner(irisData);
+            File cnae = new File("src/Data/CNAE-9.data");
+            Scanner reader = new Scanner(cnae);
             ArrayList<String> rawData = new ArrayList<>();
             while (reader.hasNextLine()){
                 rawData.add(reader.nextLine());
             }
-            double[][] data = new double[rawData.size()-1][5];
+            double[][] data = new double[rawData.size()-1][857];
 
             for(int i=0; i < data.length; i++){
                 String s = rawData.get(i);
-                s = s.replace("Iris-setosa","0").replace("Iris-versicolor","1").replace("Iris-virginica","2");
+                char prefix = s.charAt(0);
+                s = s.substring(2);
+                s += ",";
+                s += prefix;
                 String[] S = s.split(",");
+
                 double[] inputs = Arrays.stream(S).mapToDouble(Double::parseDouble).toArray();
                 data[i]= inputs.clone();
             }
-            System.out.println(Colors.TEXT_GREEN + "Iris data loaded");
+            System.out.println(Colors.TEXT_GREEN + "CNAE-9 data loaded");
             return data;
         }catch (Exception e){
             System.out.println(Colors.TEXT_RED+e.getMessage());

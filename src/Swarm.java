@@ -94,13 +94,13 @@ public class Swarm extends Thread{
                     for (double[] input: lData){
                         feedForward(input);
                         double[] output = NeuralNetwork[NeuralNetwork.length-1];
-                        double expected = input[input.length-1]-1;
+                        double expected = input[input.length-1];
                         double error = 0;
                         for (int e = 0; e<output.length; e++){
                             if (e == expected){
-                                error +=  ((2-output[e]) * (2-output[e]));
+                                error +=  ((1-output[e]) * (1-output[e]));
                             }else{
-                                error +=  ((output[e]+1) * (output[e]+1));
+                                error +=  ((output[e]) * (output[e]));
                             }
                         }
                         error = error/output.length;

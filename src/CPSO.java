@@ -5,15 +5,15 @@ public class CPSO {
     public static double[][][] NeuralNetwork;
     public static double[][] NN;
     public double[][] data;
-    public static double maxW = 0.5;
-    public static double minW = -0.5;
-    public static double inertia = 0.7;
-    public static double context1 = 0.8;
-    public static double context2 = 0.8;
-    public static double maxVelocity = 0.2;
-    public static int iterations = 2000;
+    public static double maxW = 1;
+    public static double minW = -1;
+    public static double inertia = 1.6;
+    public static double context1 = 1.8;
+    public static double context2 = 1.8;
+    public static double maxVelocity = 0.65;
+    public static int iterations = 1000;
     public static double bestError = Double.MAX_VALUE;
-    public static int particles = 20;
+    public static int particles = 50;
     public static volatile boolean updateCopyFlipFlop = false;
 
     public double[][][] createNeuralNetwork(int[] config){
@@ -76,12 +76,29 @@ public class CPSO {
         System.out.println(Arrays.toString(NN[NN.length-1]));
     }
 
-    public void iris(){
-        int []config = {4,4,3};
-        Iris iris = new Iris();
-        data = iris.LoadData();
-        NeuralNetwork = createNeuralNetwork(config);
-        System.out.println(Colors.TEXT_GREEN + "Neural Network Generated");
+
+    public static synchronized void updateWeight(int i, int j,int _j, double w,double bError){
+        NeuralNetwork[i][j][_j] = w;
+        bestError = bError;
+        System.out.println(Colors.TEXT_GREEN+" MSE: "+bError);
+        updateCopyFlipFlop = true;
+
+    }
+
+    public static synchronized double[][][] getNetwork(){
+        double[][][] NN = new double[NeuralNetwork.length][][];
+        for (int l = 0; l < NN.length; l++){
+            NN[l] = new double[NeuralNetwork[l].length][];
+            for (int n = 0; n < NN[l].length; n++){
+                NN[l][n] = new double[NeuralNetwork[l][n].length];
+                System.arraycopy(NeuralNetwork[l][n], 0, NN[l][n], 0, NN[l][n].length);
+            }
+        }
+        updateCopyFlipFlop = false;
+        return NN;
+    }
+
+    public void train(int []config){
         Swarm[] swarms = createSwarms(config);
         System.out.println(Colors.TEXT_GREEN + "Swarms Generated");
         for (Swarm s: swarms){
@@ -102,29 +119,29 @@ public class CPSO {
         }
     }
 
-    public static synchronized void updateWeight(int i, int j,int _j, double w,double bError){
-        NeuralNetwork[i][j][_j] = w;
-        bestError = bError;
-        System.out.println(Colors.TEXT_GREEN+" MSE: "+bError);
-        updateCopyFlipFlop = true;
-
+    public void iris(){
+        int []config = {4,4,3};
+        Iris iris = new Iris();
+        data = iris.LoadData();
+        NeuralNetwork = createNeuralNetwork(config);
+        System.out.println(Colors.TEXT_GREEN + "Neural Network Generated");
+        train(config);
     }
 
-    public static synchronized double[][][] getNetwork(){
-        double[][][] NN = new double[NeuralNetwork.length][][];
-        for (int l = 0; l < NN.length; l++){
-            NN[l] = new double[NeuralNetwork[l].length][];
-            for (int n = 0; n < NN[l].length; n++){
-               NN[l][n] = new double[NeuralNetwork[l][n].length];
-                System.arraycopy(NeuralNetwork[l][n], 0, NN[l][n], 0, NN[l][n].length);
-            }
-        }
-        updateCopyFlipFlop = false;
-        return NN;
+    public void cnae(){
+        int []config = {856,30,9};
+        CNAE9 cnae9 = new CNAE9();
+        data = cnae9.LoadData();
+        NeuralNetwork = createNeuralNetwork(config);
+        System.out.println(Colors.TEXT_GREEN + "Neural Network Generated");
+        train(config);
     }
+
+
 
     public static void main(String [] args){
         CPSO obj = new CPSO();
-        obj.iris();
+        //obj.iris();
+        obj.cnae();
     }
 }
