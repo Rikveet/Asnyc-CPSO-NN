@@ -1,7 +1,6 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import org.ejml.simple.SimpleMatrix;
+
+import java.util.*;
 
 public class Swarm extends Thread{
     private int i,j,particles;
@@ -12,8 +11,8 @@ public class Swarm extends Thread{
     private double[][] Velocities;
     private double[][] Weights;
     private double[][] personalBestWeights;
-    private double[][] NeuralNetwork;
-    private double[][][] NN;
+    private SimpleMatrix[] NeuralNetwork;
+    private SimpleMatrix[] NN;
     private int[] config;
 
     Swarm(int i, int j, int particleSize, int[] config){
@@ -32,9 +31,11 @@ public class Swarm extends Thread{
         this.Weights = new double[particles][particleSize];
         this.personalBestError = new double[particles][particleSize];
         this.personalBestWeights = new double[particles][particleSize];
-        NeuralNetwork = new double[config.length][];
+        NeuralNetwork = new SimpleMatrix[config.length];
         for(int l =0; l < NeuralNetwork.length; l++){
-            NeuralNetwork[l] = new double[config[l]];
+            double[] nodeVals = new double[config[i]];
+            Arrays.fill(nodeVals,0);
+            NeuralNetwork[l] = new SimpleMatrix(1,config[l],true,nodeVals);
         }
         Arrays.fill(globalBestError,Double.MAX_VALUE);
         Arrays.fill(globalBestWeights, (Math.random() * (CPSO.maxW- CPSO.minW)) + CPSO.minW);
@@ -53,42 +54,42 @@ public class Swarm extends Thread{
 
     }
 
-    public double activate(double input){
+    private double activate(double input){
         double pve = Math.exp(input);
         double nve = Math.exp(-input);
         return (pve - nve)/(pve + nve);
     }
 
-    public void feedForward(double[] input) {
-        for (double[] doubles : NeuralNetwork) {
-            Arrays.fill(doubles, 0);
+    private double[] feedForward(double[] input) {
+        double[] output = new double[NeuralNetwork[NeuralNetwork.length-1].numCols()];
+        for(int _n = 0; _n<NeuralNetwork[0].numCols(); _n++){
+            NeuralNetwork[0].set(0,_n,input[_n]);
         }
-        System.arraycopy(input, 0, NeuralNetwork[0], 0, input.length - 1);
         for(int l =0; l < NeuralNetwork.length-1; l++){
-            for(int _n = 0; _n < NeuralNetwork[l].length; _n++){
-                NeuralNetwork[l][_n] = activate(NeuralNetwork[l][_n]);
-               for (int n =0; n < NeuralNetwork[l+1].length; n++){
-                   NeuralNetwork[l+1][n] += NeuralNetwork[l][_n] * NN[l][_n][n];
-               }
+            for( int _n = 0; _n < NeuralNetwork[l].numCols(); _n++){
+                NeuralNetwork[l].set(0,_n,activate(NeuralNetwork[l].get(0,_n)));
             }
+            NeuralNetwork[l+1] = NeuralNetwork[l].mult(NN[l]);
         }
-        for(int n = 0; n < NeuralNetwork[NeuralNetwork.length-1].length; n++){
-            NeuralNetwork[NeuralNetwork.length-1][n] = activate(NeuralNetwork[NeuralNetwork.length-1][n]);
+
+        for(int n = 0; n < NeuralNetwork[NeuralNetwork.length-1].numCols(); n++){
+            output[n] = activate(NeuralNetwork[NeuralNetwork.length-1].get(0,n));
         }
+        return output;
     }
 
     public void run(){
         List<double[]> lData = CPSO.getData();
+        int dataSize = lData.size();
         for (int _i = 0 ; _i < iterations; _i++){
             for (int p =0; p < Weights.length; p++){
                 for ( int w= 0; w <Weights[p].length; w++){
                     NN = CPSO.getNetwork();
-                    NN[i][j][w] = Weights[p][w];
+                    NN[i].set(j,w,Weights[p][w]);
                     double mse = 0;
                     Collections.shuffle(lData);
                     for (double[] input: lData){
-                        feedForward(input);
-                        double[] output = NeuralNetwork[NeuralNetwork.length-1];
+                        double[] output = feedForward(input);
                         double expected = input[input.length-1];
                         double error = 0;
                         for (int e = 0; e<output.length; e++){
@@ -101,7 +102,7 @@ public class Swarm extends Thread{
                         error = error/output.length;
                         mse+=error;
                     }
-                    //mse = mse / data.length;
+                    mse = mse / dataSize;
                     if (personalBestError[p][w] > mse){
                         personalBestError[p][w] = mse;
                         personalBestWeights[p][w] = Weights[p][w];
@@ -109,9 +110,9 @@ public class Swarm extends Thread{
                     if(globalBestError[w]>mse){
                         globalBestError[w] = mse;
                         globalBestWeights[w] = Weights[p][w];
-                        CPSO.updateWeight(i,j,w,Weights[p][w],mse,_i);
+                        CPSO.updateWeight(i,j,w,Weights[p][w],mse);
                     }
-                    Velocities[p][w] = (inertia * Velocities[p][w]) + ((context1 * Math.random())*(globalBestWeights[w] - Weights[p][w])) + ((context1 * Math.random())*(personalBestWeights[p][w] - Weights[p][w]));
+                    Velocities[p][w] = (inertia * Velocities[p][w]) + ((context1 * Math.random())*(globalBestWeights[w] - Weights[p][w])) + ((context2 * Math.random())*(personalBestWeights[p][w] - Weights[p][w]));
                     if (Velocities[p][w]>maxVelocity){
                         Velocities[p][w] = maxVelocity;
                     }
