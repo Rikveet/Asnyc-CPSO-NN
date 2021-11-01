@@ -1,10 +1,13 @@
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class CPSO {
 
     public static double[][][] NeuralNetwork;
     public static double[][] NN;
-    public double[][] data;
+    public static List<double[]> data;
     public static double maxW = 1;
     public static double minW = -1;
     public static double inertia = 1.6;
@@ -15,6 +18,7 @@ public class CPSO {
     public static double bestError = Double.MAX_VALUE;
     public static int particles = 50;
     public static volatile boolean updateCopyFlipFlop = false;
+    public static int threadLimit = 5;
 
     public double[][][] createNeuralNetwork(int[] config){
         double[][][] NeuralNetwork = new double[config.length-1][][];
@@ -43,7 +47,7 @@ public class CPSO {
         int s = 0;
         for(int i=0; i < config.length-1; i++){
             for(int n = 0; n < config[i];n++){
-                swarms[s] = new Swarm(i,n,config[i+1],data,config);
+                swarms[s] = new Swarm(i,n,config[i+1],config);
                 s++;
             }
         }
@@ -77,10 +81,10 @@ public class CPSO {
     }
 
 
-    public static synchronized void updateWeight(int i, int j,int _j, double w,double bError){
+    public static synchronized void updateWeight(int i, int j,int _j, double w,double bError, int iter){
         NeuralNetwork[i][j][_j] = w;
         bestError = bError;
-        System.out.println(Colors.TEXT_GREEN+" MSE: "+bError);
+        System.out.println(Colors.TEXT_GREEN+" MSE: "+bError + " Iteration: "+iter);
         updateCopyFlipFlop = true;
 
     }
@@ -98,22 +102,29 @@ public class CPSO {
         return NN;
     }
 
+    public static synchronized List<double[]> getData(){
+        return new ArrayList<>(data);
+    }
+
     public void train(int []config){
         Swarm[] swarms = createSwarms(config);
         System.out.println(Colors.TEXT_GREEN + "Swarms Generated");
-        for (Swarm s: swarms){
-            s.start();
-        }
-        for (Swarm s: swarms){
-            try{
-                s.join();
+        for(int _s = 0; _s < swarms.length;_s+=threadLimit){
+            for(int _t = 0; (_s*threadLimit)+_t < swarms.length && _t < threadLimit; _t++){
+                swarms[(_s*threadLimit)+_t].start();
             }
-            catch (Exception e){
-                System.out.println(Colors.TEXT_RED + e.getMessage());
+            for(int _t = 0; (_s*threadLimit)+_t < swarms.length && _t < threadLimit; _t++){
+                try{
+                    swarms[(_s*threadLimit)+_t].join();
+                }
+                catch (Exception e){
+                    System.out.println(Colors.TEXT_RED + e.getMessage());
+                }
             }
+            System.out.println("Activated "+threadLimit+" swarms");
 
         }
-        System.out.println("Activated all swarms");
+        System.out.println("All swarms complete.");
         for (double[] input: data) {
             feedForward(input);
         }

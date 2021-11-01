@@ -1,10 +1,11 @@
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 
 public class CNAE9 {
-    double[][] LoadData(){
+    List<double[]> LoadData(){
         try{
             File cnae = new File("src/Data/CNAE-9.data");
             Scanner reader = new Scanner(cnae);
@@ -26,7 +27,7 @@ public class CNAE9 {
                 data[i]= inputs.clone();
             }
             System.out.println(Colors.TEXT_GREEN + "CNAE-9 data loaded");
-            return data;
+            return new ArrayList<>(Arrays.asList(data));
         }catch (Exception e){
             System.out.println(Colors.TEXT_RED+e.getMessage());
         }

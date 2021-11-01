@@ -5,7 +5,6 @@ import java.util.List;
 
 public class Swarm extends Thread{
     private int i,j,particles;
-    private double[][] data;
     private double inertia, context1, context2, maxVelocity, iterations;
     private double[] globalBestError;
     private double[] globalBestWeights;
@@ -17,7 +16,7 @@ public class Swarm extends Thread{
     private double[][][] NN;
     private int[] config;
 
-    Swarm(int i, int j, int particleSize, double[][] data, int[] config){
+    Swarm(int i, int j, int particleSize, int[] config){
         this.i = i;
         this.j = j;
         this.config = config;
@@ -51,11 +50,7 @@ public class Swarm extends Thread{
         for (double[] values : personalBestWeights) {
             Arrays.fill(values, (Math.random() * (CPSO.maxW- CPSO.minW)) + CPSO.minW);
         }
-        this.data = new double[data.length][];
-        for(int _i = 0; _i < data.length; _i++){
-            this.data[_i] = new double[data[_i].length];
-            System.arraycopy(data[_i], 0, this.data[_i], 0, data[_i].length);
-        }
+
     }
 
     public double activate(double input){
@@ -83,7 +78,7 @@ public class Swarm extends Thread{
     }
 
     public void run(){
-        List<double[]> lData = new ArrayList<>(Arrays.asList(data));
+        List<double[]> lData = CPSO.getData();
         for (int _i = 0 ; _i < iterations; _i++){
             for (int p =0; p < Weights.length; p++){
                 for ( int w= 0; w <Weights[p].length; w++){
@@ -106,7 +101,7 @@ public class Swarm extends Thread{
                         error = error/output.length;
                         mse+=error;
                     }
-                    mse = mse / data.length;
+                    //mse = mse / data.length;
                     if (personalBestError[p][w] > mse){
                         personalBestError[p][w] = mse;
                         personalBestWeights[p][w] = Weights[p][w];
@@ -114,7 +109,7 @@ public class Swarm extends Thread{
                     if(globalBestError[w]>mse){
                         globalBestError[w] = mse;
                         globalBestWeights[w] = Weights[p][w];
-                        CPSO.updateWeight(i,j,w,Weights[p][w],mse);
+                        CPSO.updateWeight(i,j,w,Weights[p][w],mse,_i);
                     }
                     Velocities[p][w] = (inertia * Velocities[p][w]) + ((context1 * Math.random())*(globalBestWeights[w] - Weights[p][w])) + ((context1 * Math.random())*(personalBestWeights[p][w] - Weights[p][w]));
                     if (Velocities[p][w]>maxVelocity){

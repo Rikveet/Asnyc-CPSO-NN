@@ -1,10 +1,11 @@
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 
 public class Iris {
-    double[][] LoadData(){
+    List<double[]> LoadData(){
         try{
             File irisData = new File("src/Data/iris.data");
             Scanner reader = new Scanner(irisData);
@@ -22,7 +23,7 @@ public class Iris {
                 data[i]= inputs.clone();
             }
             System.out.println(Colors.TEXT_GREEN + "Iris data loaded");
-            return data;
+            return new ArrayList<>(Arrays.asList(data));
         }catch (Exception e){
             System.out.println(Colors.TEXT_RED+e.getMessage());
         }
